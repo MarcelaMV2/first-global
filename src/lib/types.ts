@@ -53,6 +53,8 @@ export interface Alianza {
   totalRegional: number;   // "Alianza Regional" (Total Rojo / Azul)
   buddy: number;           // Puntos Buddy
   escalada: string[];      // Zonas de escalada de cada equipo
+  penal: number;           // Puntos de descuento (penalización)
+  penalObs: string;        // Observación: regla / motivo de la penalización
 }
 
 export interface Ronda {

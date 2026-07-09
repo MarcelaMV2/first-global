@@ -169,6 +169,21 @@ function buddyPill(side: "rojo" | "azul", val: number, round: number): string {
     </div>`;
 }
 
+function penaltyPill(side: "rojo" | "azul", val: number, obs: string): string {
+  if (!val) return "";
+  const hasObs = obs.trim().length > 0;
+  const warnIcon = `<svg class="round-penalty__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
+  return `
+    <div class="round-penalty-wrap ${side === "rojo" ? "round-penalty-wrap--left" : "round-penalty-wrap--right"}">
+      <span class="round-penalty round-penalty--${side === "rojo" ? "red" : "blue"}" tabindex="0" role="note"
+        aria-label="Penalización de ${fmt(val, 0)} puntos${hasObs ? `: ${esc(obs)}` : ""}">
+        ${warnIcon}
+        <span class="round-penalty__value">−${fmt(val, 0)} pts</span>
+        ${hasObs ? `<span class="round-penalty__tip" role="tooltip">${esc(obs)}</span>` : ""}
+      </span>
+    </div>`;
+}
+
 function centerChip(label: string, metricKey: string, val: number, prefix = ""): string {
   return `
     <div class="round-chip">
@@ -230,6 +245,7 @@ function roundBody(r: Ronda): string {
               ${r.rojo.equipos.length ? r.rojo.equipos.map((e) => teamCard(r.n, "rojo", e)).join("") : emptyAlliance("rojo")}
               ${regionalBox("rojo", r.rojo.totalRegional, r.n)}
               ${buddyPill("rojo", r.rojo.buddy, r.n)}
+              ${penaltyPill("rojo", r.rojo.penal, r.rojo.penalObs)}
             </div>
 
             <div class="round-stage__center">
@@ -260,6 +276,7 @@ function roundBody(r: Ronda): string {
               ${r.azul.equipos.length ? r.azul.equipos.map((e) => teamCard(r.n, "azul", e)).join("") : emptyAlliance("azul")}
               ${regionalBox("azul", r.azul.totalRegional, r.n)}
               ${buddyPill("azul", r.azul.buddy, r.n)}
+              ${penaltyPill("azul", r.azul.penal, r.azul.penalObs)}
             </div>
           </div>
         </div>

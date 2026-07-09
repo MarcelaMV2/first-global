@@ -118,7 +118,7 @@ function buildMecanica(rows: string[][], roster: Roster): MecTeam[] {
 function alianza(
   r: string[],
   roster: Roster,
-  base: { eq: number; esc: number; buddy: number; total: number; score: number }
+  base: { eq: number; esc: number; buddy: number; total: number; score: number; penal: number; penalObs: number }
 ): Alianza {
   const letras = [r[base.eq], r[base.eq + 1], r[base.eq + 2]].map(clean).filter(Boolean);
   return {
@@ -127,6 +127,8 @@ function alianza(
     totalRegional: num(r[base.total]),
     buddy: num(r[base.buddy]),
     escalada: [r[base.esc], r[base.esc + 1], r[base.esc + 2]].map(clean),
+    penal: num(r[base.penal]),
+    penalObs: clean(r[base.penalObs]),
   };
 }
 
@@ -144,8 +146,8 @@ function buildRondas(rows: string[][], roster: Roster): Ronda[] {
       out.push(emptyRonda(n));
       continue;
     }
-    const rojo = alianza(r, roster, { eq: 3, esc: 7, buddy: 14, total: 15, score: 32 });
-    const azul = alianza(r, roster, { eq: 16, esc: 20, buddy: 27, total: 28, score: 33 });
+    const rojo = alianza(r, roster, { eq: 3, esc: 7, buddy: 14, total: 15, score: 32, penal: 34, penalObs: 35 });
+    const azul = alianza(r, roster, { eq: 16, esc: 20, buddy: 27, total: 28, score: 33, penal: 36, penalObs: 37 });
     out.push({
       n,
       estado: clean(r[1]),
@@ -162,7 +164,7 @@ function buildRondas(rows: string[][], roster: Roster): Ronda[] {
 }
 
 function emptyRonda(n: number): Ronda {
-  const vacia = (): Alianza => ({ equipos: [], score: 0, totalRegional: 0, buddy: 0, escalada: [] });
+  const vacia = (): Alianza => ({ equipos: [], score: 0, totalRegional: 0, buddy: 0, escalada: [], penal: 0, penalObs: "" });
   return { n, estado: "", descansa: "", rojo: vacia(), azul: vacia(), wildfireExt: 0, robotsZona3: 0, coopBonus: 0, hasData: false };
 }
 

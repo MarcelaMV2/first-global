@@ -1207,6 +1207,131 @@
   background:linear-gradient(135deg,var(--color-blue-400),var(--color-blue-500));
 }
 
+/* ---- Chip de penalización (con tooltip al hover) ---- */
+.round-penalty-wrap{
+  margin-top:.55rem;
+}
+
+.round-penalty-wrap--left{
+  text-align:left;
+}
+
+.round-penalty-wrap--right{
+  text-align:right;
+}
+
+.round-penalty{
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+  gap:.42rem;
+  border-radius:999px;
+  padding:.55rem 1rem;
+  font-size:.82rem;
+  font-weight:800;
+  cursor:default;
+  background:var(--color-surface);
+  box-shadow:0 12px 26px rgba(15,23,42,.12);
+  transition:transform .2s ease, box-shadow .2s ease;
+}
+
+.round-penalty:hover,
+.round-penalty:focus-visible{
+  transform:translateY(-1px);
+  box-shadow:0 16px 30px rgba(15,23,42,.18);
+  outline:none;
+}
+
+.round-penalty--red{
+  border:1.5px solid var(--color-red-300);
+  color:var(--color-red-600);
+}
+
+.round-penalty--blue{
+  border:1.5px solid var(--color-blue-300);
+  color:var(--color-blue-600);
+}
+
+.round-penalty__icon{
+  width:1rem;
+  height:1rem;
+  flex:none;
+}
+
+.round-penalty__value{
+  line-height:1;
+}
+
+.round-penalty__tip{
+  position:absolute;
+  bottom:calc(100% + .55rem);
+  left:50%;
+  transform:translateX(-50%) translateY(.25rem);
+  z-index:30;
+  width:max-content;
+  max-width:15rem;
+  padding:.55rem .7rem;
+  border-radius:.7rem;
+  background:var(--color-gray-900);
+  color:var(--color-white);
+  font-size:.72rem;
+  font-weight:600;
+  line-height:1.35;
+  text-align:left;
+  white-space:normal;
+  box-shadow:0 16px 34px rgba(15,23,42,.28);
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .18s ease, transform .18s ease;
+}
+
+.round-penalty__tip::after{
+  content:"";
+  position:absolute;
+  top:100%;
+  left:50%;
+  transform:translateX(-50%);
+  border:6px solid transparent;
+  border-top-color:var(--color-gray-900);
+}
+
+.round-penalty:hover .round-penalty__tip,
+.round-penalty:focus-visible .round-penalty__tip{
+  opacity:1;
+  transform:translateX(-50%) translateY(0);
+}
+
+/* Anclar el tooltip hacia adentro según el lado (evita que se salga del card) */
+.round-penalty-wrap--left .round-penalty__tip{
+  left:0;
+  transform:translateX(0) translateY(.25rem);
+}
+
+.round-penalty-wrap--left .round-penalty__tip::after{
+  left:1.4rem;
+}
+
+.round-penalty-wrap--left .round-penalty:hover .round-penalty__tip,
+.round-penalty-wrap--left .round-penalty:focus-visible .round-penalty__tip{
+  transform:translateX(0) translateY(0);
+}
+
+.round-penalty-wrap--right .round-penalty__tip{
+  left:auto;
+  right:0;
+  transform:translateX(0) translateY(.25rem);
+}
+
+.round-penalty-wrap--right .round-penalty__tip::after{
+  left:auto;
+  right:1.4rem;
+}
+
+.round-penalty-wrap--right .round-penalty:hover .round-penalty__tip,
+.round-penalty-wrap--right .round-penalty:focus-visible .round-penalty__tip{
+  transform:translateX(0) translateY(0);
+}
+
 .round-stage__empty{
   display:grid;
   min-height:10rem;
