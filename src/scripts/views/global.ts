@@ -127,17 +127,20 @@ function podiumSlot(row: GlobalRow | undefined, place: number, tier: MedalTier, 
   const score = row ? fmt(row.total) : "—";
   const name = row ? esc(row.nombre) : "Por definir";
   const placeholder = row ? "" : " gr-podium__slot--placeholder";
+  const championLabel = champion
+    ? '<span class="gr-podium__champion text-primary">Finalistas</span>'
+    : '<span class="gr-podium__champion-spacer" aria-hidden="true"></span>';
 
   return `
     <article class="gr-podium__slot ${champion ? "gr-podium__slot--champion" : "gr-podium__slot--secondary"}${placeholder}">
-      ${champion ? '<span class="gr-podium__champion">Finalistas</span>' : '<span class="gr-podium__champion-spacer" aria-hidden="true"></span>'}
+      ${championLabel}
       <div class="gr-podium__float">
         <div class="gr-podium__medal-box">
           ${medalSvg(tier, place, champion)}
           <span class="gr-podium__shine" aria-hidden="true"></span>
         </div>
       </div>
-      <p class="gr-podium__name">${name}</p>
+      <p class="gr-podium__name text-primary">${name}</p>
       <p class="gr-podium__score gr-podium__score--${tier}">${score}</p>
     </article>`;
 }
@@ -152,19 +155,19 @@ function badgeTone(rank: number): string {
 function metric(label: string, value: number): string {
   return `
     <div class="gr-rank-card__metric">
-      <span class="gr-rank-card__metric-label">${label}</span>
-      <span class="gr-rank-card__metric-value">${fmt(value)}</span>
+      <span class="gr-rank-card__metric-label text-tertiary">${label}</span>
+      <span class="gr-rank-card__metric-value text-primary">${fmt(value)}</span>
     </div>`;
 }
 
 function rankCard(row: GlobalRow, index: number): string {
   return `
-    <article class="gr-rank-card" style="--gr-row-delay:${Math.min(index, 11) * 0.045}s">
+    <article class="gr-rank-card border border-default bg-surface" style="--gr-row-delay:${Math.min(index, 11) * 0.045}s">
       <div class="gr-rank-card__main">
         <div class="gr-rank-card__identity">
-          <span class="gr-rank-card__badge${badgeTone(row.rank)}">${row.rank}</span>
+          <span class="gr-rank-card__badge bg-subtle text-secondary${badgeTone(row.rank)}">${row.rank}</span>
           <div class="gr-rank-card__person">
-            <p class="gr-rank-card__name">${esc(row.nombre)}</p>
+            <p class="gr-rank-card__name text-primary">${esc(row.nombre)}</p>
           </div>
         </div>
 
@@ -175,15 +178,15 @@ function rankCard(row: GlobalRow, index: number): string {
         </div>
 
         <div class="gr-rank-card__total">
-          <span class="gr-rank-card__total-label">Total</span>
-          <span class="gr-rank-card__total-value">${fmt(row.total)}</span>
+          <span class="gr-rank-card__total-label text-tertiary">Total</span>
+          <span class="gr-rank-card__total-value text-primary">${fmt(row.total)}</span>
         </div>
       </div>
     </article>`;
 }
 
 function emptyList(): string {
-  return `<div class="gr-list__empty">Sin datos de ranking por ahora.</div>`;
+  return `<div class="gr-list__empty border border-default bg-surface text-secondary">Sin datos de ranking por ahora.</div>`;
 }
 
 export function renderGlobal(el: HTMLElement, data: Payload) {
@@ -196,7 +199,7 @@ export function renderGlobal(el: HTMLElement, data: Payload) {
   el.innerHTML = `
     <section class="gr-module gr-module--animated">
       <header class="gr-module__header">
-        <h2 class="gr-module__title">RANKING</h2>
+        <h2 class="gr-module__title text-primary">RANKING</h2>
       </header>
 
       <section class="gr-panel" aria-label="Global ranking">

@@ -37,7 +37,7 @@ function row(r: ProgRow): string {
             <span>Rendimiento</span><span class="text-primary">${pct}%</span>
           </div>
           <div class="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted">
-            <div class="h-full rounded-full bg-gray-900" style="width:${pct}%"></div>
+            <div class="h-full rounded-full bg-brand" style="width:${pct}%"></div>
           </div>
         </div>
       </div>
