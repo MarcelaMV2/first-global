@@ -2,13 +2,13 @@
 import RankingLayout from "../layouts/RankingLayout.astro";
 ---
 
-<RankingLayout active="global">
+<RankingLayout active="ingenieria">
   <div id="view" class="min-h-[40vh]"></div>
 </RankingLayout>
 
 <script>
   import { startPolling } from "../scripts/poll";
-  import { renderGlobal } from "../scripts/views/global";
+  import { renderIngenieria } from "../scripts/views/ingenieria";
   const view = document.getElementById("view")!;
-  startPolling((data) => renderGlobal(view, data));
+  startPolling((data) => renderIngenieria(view, data));
 </script>

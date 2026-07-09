@@ -1,0 +1,257 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+
+  /* ==========================
+      FONTS
+  ========================== */
+
+  --font-heading: "Bebas Neue", "Arial Narrow", sans-serif;
+  --font-body: "Plus Jakarta Sans", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  /* ==========================
+      FONT SIZE
+  ========================== */
+
+  --text-heading-xl: 3rem;
+  --text-heading-lg: 2.5rem;
+  --text-heading-md: 1.875rem;
+  --text-heading-sm: 1.5rem;
+  --text-heading-xs: 1.25rem;
+
+  --text-lg: 1.125rem;
+  --text-md: 1rem;
+  --text-sm: .875rem;
+  --text-xs: .75rem;
+
+  /* ==========================
+      LINE HEIGHT
+  ========================== */
+
+  --lh-120: 1.2;
+  --lh-130: 1.3;
+  --lh-140: 1.4;
+  --lh-150: 1.5;
+
+  /* ==========================
+      FONT WEIGHT
+  ========================== */
+
+  --fw-regular:400;
+  --fw-medium:500;
+  --fw-semibold:600;
+  --fw-bold:700;
+
+  /* ==========================
+      BASE
+  ========================== */
+
+  --color-white:#FFFFFF;
+  --color-black:#000000;
+
+  /* ==========================
+      GRAYS
+  ========================== */
+
+  --color-gray-50:#FAFAFA;
+  --color-gray-100:#F0F0F0;
+  --color-gray-200:#E4E4E4;
+  --color-gray-300:#C8C8C8;
+  --color-gray-400:#A0A0A0;
+  --color-gray-500:#737373;
+  --color-gray-600:#525252;
+  --color-gray-700:#363636;
+  --color-gray-800:#1F1F1F;
+  --color-gray-900:#141414;
+  --color-gray-950:#0A0A0A;
+
+  /* ==========================
+      BLUE
+  ========================== */
+
+  --color-blue-50:#EEF1FF;
+  --color-blue-100:#DDE3FF;
+  --color-blue-200:#BFCAFF;
+  --color-blue-300:#94A3FF;
+  --color-blue-400:#6B7BF5;
+  --color-blue-500:#4F63E8;
+  --color-blue-600:#3A4ED4;
+  --color-blue-700:#2C3EBF;
+  --color-blue-800:#2133A0;
+  --color-blue-900:#172578;
+  --color-blue-950:#0E1850;
+
+  /* ==========================
+      GREEN
+  ========================== */
+
+  --color-green-50:#EDFDF5;
+  --color-green-100:#D3FAE8;
+  --color-green-200:#A7F3D0;
+  --color-green-300:#6EE7B0;
+  --color-green-400:#34D399;
+  --color-green-500:#10B981;
+  --color-green-600:#059669;
+  --color-green-700:#047857;
+  --color-green-800:#065F46;
+  --color-green-900:#064E3B;
+  --color-green-950:#022C22;
+
+  /* ==========================
+      RED
+  ========================== */
+
+  --color-red-50:#FEF2F2;
+  --color-red-100:#FEE2E2;
+  --color-red-200:#FECACA;
+  --color-red-300:#FCA5A5;
+  --color-red-400:#F87171;
+  --color-red-500:#EF4444;
+  --color-red-600:#DC2626;
+  --color-red-700:#B91C1C;
+  --color-red-800:#991B1B;
+  --color-red-900:#7F1D1D;
+  --color-red-950:#450A0A;
+
+  /* ==========================
+      YELLOW
+  ========================== */
+
+  --color-yellow-50:#FFFBEB;
+  --color-yellow-100:#FEF3C7;
+  --color-yellow-200:#FDE68A;
+  --color-yellow-300:#FCD34D;
+  --color-yellow-400:#FBBF24;
+  --color-yellow-500:#F59E0B;
+  --color-yellow-600:#D97706;
+  --color-yellow-700:#B45309;
+  --color-yellow-800:#92400E;
+  --color-yellow-900:#78350F;
+  --color-yellow-950:#451A03;
+
+  /* ==========================
+      ORANGE
+  ========================== */
+
+  --color-orange-50:#FFF7ED;
+  --color-orange-100:#FFEDD5;
+  --color-orange-200:#FED7AA;
+  --color-orange-300:#FDBA74;
+  --color-orange-400:#FB923C;
+  --color-orange-500:#F97316;
+  --color-orange-600:#EA580C;
+  --color-orange-700:#C2410C;
+  --color-orange-800:#9A3412;
+  --color-orange-900:#7C2D12;
+  --color-orange-950:#431407;
+
+  /* ==========================
+      INDIGO
+  ========================== */
+
+  --color-indigo-50:#EEF2FF;
+  --color-indigo-100:#E0E7FF;
+  --color-indigo-200:#C7D2FE;
+  --color-indigo-300:#A5B4FC;
+  --color-indigo-400:#818CF8;
+  --color-indigo-500:#6366F1;
+  --color-indigo-600:#4F46E5;
+  --color-indigo-700:#4338CA;
+  --color-indigo-800:#3730A3;
+  --color-indigo-900:#312E81;
+  --color-indigo-950:#1E1B4B;
+
+  /* ==========================
+      SEMANTIC COLORS
+  ========================== */
+
+  /* Text */
+
+  --color-primary:var(--color-gray-900);
+  --color-secondary:var(--color-gray-500);
+  --color-tertiary:var(--color-gray-400);
+  --color-inverse:var(--color-white);
+
+  /* Background */
+
+  --color-canvas:var(--color-gray-50);
+  --color-surface:var(--color-white);
+  --color-subtle:var(--color-gray-100);
+  --color-muted:var(--color-gray-200);
+
+  /* Actions */
+
+  --color-brand:var(--color-gray-900);
+  --color-brand-hover:var(--color-gray-700);
+  --color-brand-subtle:var(--color-gray-100);
+
+  --color-link:var(--color-blue-500);
+
+  /* Borders */
+
+  --color-default:var(--color-gray-200);
+  --color-strong:var(--color-gray-300);
+
+  /* ==========================
+      LAYOUT
+  ========================== */
+
+  --padding-x-mobile:16px;
+  --padding-x-tablet:32px;
+  --padding-x-desktop:120px;
+
+  --max-width-mobile:640px;
+  --max-width-tablet:768px;
+  --max-width-desktop:1440px;
+
+  /* ==========================
+      ANIMATIONS
+  ========================== */
+
+  @keyframes slide-in-right {
+
+    from{
+      opacity:0;
+      transform:translateX(100%);
+    }
+
+    to{
+      opacity:1;
+      transform:translateX(0);
+    }
+
+  }
+
+  --animate-slide-in-right:slide-in-right .3s ease;
+}
+
+/* ==========================
+    DARK MODE
+========================== */
+
+.dark{
+
+  --color-primary:var(--color-gray-50);
+  --color-secondary:var(--color-gray-400);
+  --color-tertiary:var(--color-gray-500);
+  --color-inverse:var(--color-gray-900);
+
+  --color-canvas:var(--color-gray-900);
+  --color-surface:var(--color-gray-800);
+  --color-subtle:var(--color-gray-700);
+  --color-muted:var(--color-gray-600);
+
+  --color-brand:var(--color-gray-50);
+  --color-brand-hover:var(--color-gray-200);
+  --color-brand-subtle:var(--color-gray-700);
+
+  --color-link:var(--color-blue-400);
+
+  --color-default:var(--color-gray-600);
+  --color-strong:var(--color-gray-500);
+
+}
