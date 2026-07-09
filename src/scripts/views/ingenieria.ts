@@ -1,6 +1,6 @@
 import type { Payload, Ronda, AlianzaEquipo, MecTeam } from "../../lib/types";
 import { fmt, esc } from "../format";
-import { paintKeepingOpen } from "../dom";
+import { paintKeepingOpen, chevron } from "../dom";
 
 let activeSub: "rondas" | "tabla" = "rondas";
 let latest: Payload | null = null;
@@ -310,35 +310,98 @@ function roundCard(r: Ronda): string {
     </details>`;
 }
 
-function mecTable(tabla: MecTeam[]): string {
-  const rows = tabla
-    .map(
-      (t) => `
-      <tr class="border-t border-default">
-        <td class="px-3 py-3 font-bold">${esc(t.equipo)}</td>
-        <td class="px-3 py-3 text-secondary">${t.integrantes.length ? t.integrantes.map(esc).join(", ") : `<span class="italic text-tertiary">Por asignar</span>`}</td>
-        <td class="px-3 py-3 text-right tabular-nums">${fmt(t.exposicion)}</td>
-        <td class="px-3 py-3 text-right tabular-nums">${fmt(t.rondas)}</td>
-        <td class="px-3 py-3 text-right font-heading text-2xl tabular-nums">${fmt(t.total)}</td>
-      </tr>`
-    )
-    .join("");
+function mecStat(label: string, value: number): string {
+  return `
+    <div class="text-center">
+      <p class="text-[10px] font-semibold uppercase tracking-wide text-tertiary">${label}</p>
+      <p class="mt-1 font-heading text-xl leading-none tabular-nums text-primary">${fmt(value)}</p>
+    </div>`;
+}
+
+// Tonos de avatar tomados de las escalas ya definidas en global.css.
+const AVATAR_TONES = [
+  "bg-blue-100 text-blue-600",
+  "bg-green-100 text-green-700",
+  "bg-red-100 text-red-600",
+  "bg-orange-100 text-orange-600",
+  "bg-indigo-100 text-indigo-600",
+  "bg-yellow-100 text-yellow-700",
+];
+
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase();
+}
+
+function toneFor(name: string): string {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  return AVATAR_TONES[h % AVATAR_TONES.length];
+}
+
+/** Chip de estudiante: avatar con iniciales de color + nombre. */
+function studentChip(name: string): string {
+  return `
+    <div class="flex items-center gap-2.5 rounded-2xl border border-default bg-surface px-3 py-2.5 shadow-sm transition-transform duration-200 hover:-translate-y-0.5">
+      <span class="grid h-10 w-10 shrink-0 place-items-center rounded-full ${toneFor(name)} font-heading text-sm font-bold ring-1 ring-black/5">${esc(initials(name))}</span>
+      <span class="min-w-0 text-sm font-semibold leading-tight text-primary">${esc(name)}</span>
+    </div>`;
+}
+
+function mecMobileTile(label: string, value: number, max: string): string {
+  return `
+    <div class="rounded-xl bg-subtle px-4 py-3 text-center">
+      <p class="text-[10px] font-semibold uppercase tracking-wide text-tertiary">${label}</p>
+      <p class="mt-1 font-heading text-2xl leading-none tabular-nums">${fmt(value)}</p>
+      <p class="text-[10px] text-tertiary">${max}</p>
+    </div>`;
+}
+
+function mecCard(t: MecTeam, rank: number): string {
+  const letra = t.equipo.replace(/equipo/i, "").trim() || t.equipo;
+  const n = t.integrantes.length;
+  const integrantes = n
+    ? t.integrantes.map(studentChip).join("")
+    : `<p class="text-sm italic text-tertiary">Integrantes por asignar</p>`;
 
   return `
-    <div class="overflow-x-auto">
-      <table class="w-full min-w-[560px] border-collapse text-sm">
-        <thead>
-          <tr class="text-left text-xs font-semibold uppercase tracking-wide text-tertiary">
-            <th class="px-3 pb-2">Equipo</th>
-            <th class="px-3 pb-2">Integrantes</th>
-            <th class="px-3 pb-2 text-right">Exposición <span class="text-[10px]">/10</span></th>
-            <th class="px-3 pb-2 text-right">Rondas <span class="text-[10px]">/30</span></th>
-            <th class="px-3 pb-2 text-right">Total <span class="text-[10px]">/40</span></th>
-          </tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>
-    </div>`;
+    <details data-key="mec-${esc(t.equipo)}" class="group overflow-hidden rounded-2xl border border-default bg-surface">
+      <summary class="flex cursor-pointer list-none items-center gap-3 px-4 py-3 [&::-webkit-details-marker]:hidden sm:gap-5">
+        <span class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-subtle font-heading text-lg text-secondary">
+          <span class="sm:hidden">${rank}</span>
+          <span class="hidden sm:block">${esc(letra)}</span>
+        </span>
+        <div class="min-w-0 flex-1">
+          <p class="truncate font-bold">${esc(t.equipo)}</p>
+          <p class="text-xs text-tertiary">${n} integrante${n === 1 ? "" : "s"}</p>
+        </div>
+        <div class="hidden items-center gap-4 sm:flex sm:gap-6">
+          ${mecStat("Expos.", t.exposicion)}
+          ${mecStat("Rondas", t.rondas)}
+        </div>
+        <div class="pl-3 text-right sm:border-l sm:border-default sm:pl-5">
+          <p class="text-[10px] font-semibold uppercase tracking-wide text-tertiary">Total</p>
+          <p class="font-heading text-3xl leading-none tabular-nums text-primary">${fmt(t.total)}</p>
+        </div>
+        ${chevron}
+      </summary>
+      <div class="border-t border-default px-4 py-4">
+        <div class="mb-4 grid grid-cols-2 gap-3 sm:hidden">
+          ${mecMobileTile("Exposición", t.exposicion, "/10")}
+          ${mecMobileTile("Rondas", t.rondas, "/30")}
+        </div>
+        <p class="mb-3 text-xs font-semibold uppercase tracking-wide text-tertiary">Integrantes</p>
+        <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">${integrantes}</div>
+      </div>
+    </details>`;
+}
+
+function mecTable(tabla: MecTeam[]): string {
+  const rankOf = new Map<string, number>();
+  [...tabla]
+    .sort((a, b) => b.total - a.total)
+    .forEach((t, i) => rankOf.set(t.equipo, i + 1));
+  return `<div class="space-y-3">${tabla.map((t) => mecCard(t, rankOf.get(t.equipo) ?? 0)).join("")}</div>`;
 }
 
 function subTab(id: "rondas" | "tabla", label: string): string {
