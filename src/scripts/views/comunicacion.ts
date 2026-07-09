@@ -4,28 +4,28 @@ import { paintKeepingOpen, chevron } from "../dom";
 
 function video(label: string, value: number): string {
   return `
-    <div class="rounded-xl bg-subtle px-4 py-4 text-center">
-      <p class="text-xs font-semibold uppercase tracking-wide text-tertiary">${label}</p>
-      <p class="mt-1 font-heading text-3xl leading-none">${fmt(value)}</p>
+    <div class="com-video-card">
+      <p class="com-video-card__label">${label}</p>
+      <p class="com-video-card__value">${fmt(value)}</p>
     </div>`;
 }
 
 function row(r: ComRow): string {
   return `
-    <details data-key="com-${esc(r.nombre)}" class="group overflow-hidden rounded-2xl border border-default bg-surface">
-      <summary class="flex cursor-pointer list-none items-center gap-3 px-4 py-3 [&::-webkit-details-marker]:hidden sm:gap-5">
-        <span class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-subtle font-heading text-lg text-secondary">${r.rank}</span>
-        <div class="min-w-0 flex-1">
+    <details data-key="com-${esc(r.nombre)}" class="com-row group overflow-hidden rounded-2xl border border-default bg-surface">
+      <summary class="com-row__summary flex cursor-pointer list-none items-center gap-3 px-4 py-3 [&::-webkit-details-marker]:hidden sm:gap-5">
+        <span class="com-row__rank grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-subtle font-heading text-lg text-secondary">${r.rank}</span>
+        <div class="com-row__name min-w-0 flex-1">
           <p class="truncate font-bold">${esc(r.nombre)}</p>
         </div>
-        <div class="text-right">
+        <div class="com-row__total text-right">
           <p class="text-xs font-semibold uppercase tracking-wide text-tertiary">Total</p>
           <p class="font-heading text-3xl leading-none tabular-nums">${fmt(r.total)}</p>
           <p class="text-xs text-tertiary">/30</p>
         </div>
         ${chevron}
       </summary>
-      <div class="grid grid-cols-1 gap-3 border-t border-default px-4 py-4 sm:grid-cols-3">
+      <div class="com-row__videos border-t border-default">
         ${video("Video 1", r.video1)}
         ${video("Video 2", r.video2)}
         ${video("Video 3", r.video3)}

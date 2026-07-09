@@ -8,7 +8,13 @@ export function paintKeepingOpen(el: HTMLElement, html: string) {
   el.innerHTML = html;
   el.querySelectorAll<HTMLDetailsElement>("details[data-key]").forEach((d) => {
     const k = d.dataset.key;
-    if (k && prev.has(k)) d.open = prev.get(k)!;
+    if (k && prev.has(k)) {
+      d.open = prev.get(k)!;
+      if (d.open) d.dataset.restoredOpen = "1";
+      else delete d.dataset.restoredOpen;
+    } else {
+      delete d.dataset.restoredOpen;
+    }
   });
 }
 

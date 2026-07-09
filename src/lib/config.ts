@@ -21,4 +21,4 @@ export const TABS = {
 } as const;
 
 /** Total de rondas a mostrar (se generan aunque aún no tengan datos). */
-export const TOTAL_RONDAS = 17;
+export const TOTAL_RONDAS = 14;

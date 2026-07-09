@@ -1,160 +1,298 @@
 import type { Payload, Ronda, AlianzaEquipo, MecTeam } from "../../lib/types";
 import { fmt, esc } from "../format";
-import { paintKeepingOpen, chevron } from "../dom";
+import { paintKeepingOpen } from "../dom";
 
 let activeSub: "rondas" | "tabla" = "rondas";
 let latest: Payload | null = null;
 
-// ==========================================================================
-//  RONDAS — replica del diseño "Igniting Innovation"
-// ==========================================================================
+const LOW_POLY_BACKDROP = buildStageBackdrop();
+
+const seenOpenRounds = new Set<string>();
+const metricSnapshot = new Map<string, number>();
+const activeMetricFrames = new Set<number>();
+
 function estadoBadge(estado: string): string {
-  if (estado === "Finalizada")
-    return `<span class="rounded-full bg-gray-900 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">Finalizada</span>`;
-  if (estado === "En curso")
-    return `<span class="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-green-700">En curso</span>`;
-  return `<span class="rounded-full bg-subtle px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-tertiary">Pendiente</span>`;
+  const label = estado || "Pendiente";
+  const tone =
+    estado === "Finalizada"
+      ? "round-badge round-badge--dark"
+      : estado === "En curso"
+        ? "round-badge round-badge--green"
+        : "round-badge round-badge--muted";
+
+  return `<span class="${tone}">${esc(label)}</span>`;
 }
 
-const smallChevron = (grp: string) =>
-  `<svg class="h-4 w-4 text-secondary transition-transform ${grp}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>`;
+function caretIcon(className: string): string {
+  return `
+    <svg class="${className}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="m6 9 6 6 6-6" />
+    </svg>`;
+}
 
-/** Tarjeta de un equipo dentro de una alianza (desplegable con integrantes). */
-function teamCard(n: number, side: "rojo" | "azul", e: AlianzaEquipo, defaultOpen: boolean): string {
+function buildStageBackdrop(): string {
+  let seed = 987654321;
+  const rand = () => {
+    seed |= 0;
+    seed = (seed + 0x6d2b79f5) | 0;
+    let r = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    r = (r + Math.imul(r ^ (r >>> 7), 61 | r)) ^ r;
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+  };
+
+  const clamp = (n: number) => Math.max(0, Math.min(255, Math.round(n)));
+  const W = 1000;
+  const H = 560;
+  const cols = 17;
+  const rows = 10;
+  const cw = W / cols;
+  const ch = H / rows;
+  const pts: Array<Array<{ x: number; y: number }>> = [];
+
+  for (let r = 0; r <= rows; r++) {
+    pts[r] = [];
+    for (let c = 0; c <= cols; c++) {
+      const edge = r === 0 || c === 0 || r === rows || c === cols;
+      const jx = edge ? 0 : (rand() - 0.5) * cw * 0.72;
+      const jy = edge ? 0 : (rand() - 0.5) * ch * 0.72;
+      pts[r][c] = { x: c * cw + jx, y: r * ch + jy };
+    }
+  }
+
+  const polygons: string[] = [];
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const a = pts[r][c];
+      const b = pts[r][c + 1];
+      const d = pts[r + 1][c];
+      const e = pts[r + 1][c + 1];
+      const quads = [
+        [a, b, d],
+        [b, e, d],
+      ];
+
+      for (const tri of quads) {
+        const cx = (tri[0].x + tri[1].x + tri[2].x) / 3;
+        const cy = (tri[0].y + tri[1].y + tri[2].y) / 3;
+        const tx = cx / W;
+        const vy = cy / H;
+        const redAmt = Math.max(0, 1 - tx * 1.85);
+        const blueAmt = Math.max(0, (tx - 0.06) * 1.15);
+
+        let R = 246;
+        let G = 243;
+        let B = 248;
+
+        R += redAmt * 6;
+        G += redAmt * (-20 * (0.4 + vy * 0.7));
+        B += redAmt * (-14 * (0.4 + vy * 0.7));
+        R += blueAmt * (-22 * (0.4 + vy * 0.7));
+        G += blueAmt * -8;
+        B += blueAmt * 6;
+
+        const variance = (rand() - 0.5) * 10;
+        const fill = `rgb(${clamp(R + variance)},${clamp(G + variance)},${clamp(B + variance)})`;
+        const animate = rand() < 0.24;
+        const duration = (4 + rand() * 6).toFixed(2);
+        const delay = (rand() * 6).toFixed(2);
+
+        polygons.push(
+          `<polygon class="round-stage__facet${animate ? " round-stage__facet--animated" : ""}" points="${tri
+            .map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`)
+            .join(" ")}" style="fill:${fill};--facet-duration:${duration}s;--facet-delay:${delay}s" />`
+        );
+      }
+    }
+  }
+
+  return `
+    <div class="round-stage__backdrop" aria-hidden="true">
+      <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice" class="round-stage__mesh">
+        ${polygons.join("")}
+      </svg>
+      <span class="round-stage__shine"></span>
+      <span class="round-stage__orb round-stage__orb--red"></span>
+      <span class="round-stage__orb round-stage__orb--blue"></span>
+      <span class="round-stage__orb round-stage__orb--white"></span>
+    </div>`;
+}
+
+function renderMetric(key: string, value: number, extraClass = "", prefix = "", suffix = ""): string {
+  return `<span class="js-round-metric ${extraClass}" data-metric="${key}" data-value="${value}" data-prefix="${esc(prefix)}" data-suffix="${esc(suffix)}">${prefix}${fmt(value, 0)}${suffix}</span>`;
+}
+
+function teamCard(n: number, side: "rojo" | "azul", e: AlianzaEquipo): string {
   const red = side === "rojo";
-  const color = red ? "text-red-500" : "text-blue-500";
-  const dot = red ? "bg-red-500" : "bg-blue-500";
-  const border = red ? "border-red-100" : "border-blue-100";
-  const dotBig = `<span class="h-3 w-3 rounded-full ${dot}"></span>`;
-  const chev = smallChevron("group-open/t:rotate-180");
+  const tone = red ? "round-team-card round-team-card--red" : "round-team-card round-team-card--blue";
+  const accent = red
+    ? `<span class="round-team-card__meta">${caretIcon("round-team-card__caret")}<span class="round-team-card__dot"></span></span>`
+    : `<span class="round-team-card__meta"><span class="round-team-card__dot"></span>${caretIcon("round-team-card__caret")}</span>`;
 
   const members = e.integrantes.length
     ? e.integrantes
         .map((m) =>
           red
-            ? `<li class="flex items-center gap-2"><span class="h-1.5 w-1.5 shrink-0 rounded-full ${dot}"></span>${esc(m)}</li>`
-            : `<li class="flex items-center justify-end gap-2">${esc(m)}<span class="h-1.5 w-1.5 shrink-0 rounded-full ${dot}"></span></li>`
+            ? `<li class="round-team-card__member"><span class="round-team-card__member-dot"></span><span>${esc(m)}</span></li>`
+            : `<li class="round-team-card__member round-team-card__member--blue"><span>${esc(m)}</span><span class="round-team-card__member-dot"></span></li>`
         )
         .join("")
-    : `<li class="italic text-tertiary">Integrantes por asignar</li>`;
+    : `<li class="round-team-card__empty">Integrantes por asignar</li>`;
 
-  const head = red
-    ? `<span class="font-heading text-xl ${color}">Equipo ${esc(e.letra)}</span><span class="flex items-center gap-2">${chev}${dotBig}</span>`
-    : `<span class="flex items-center gap-2">${dotBig}${chev}</span><span class="font-heading text-xl ${color}">Equipo ${esc(e.letra)}</span>`;
+  const header = red
+    ? `<span class="round-team-card__name">Equipo ${esc(e.letra)}</span>${accent}`
+    : `${accent}<span class="round-team-card__name">Equipo ${esc(e.letra)}</span>`;
 
   return `
-    <details data-key="ronda-${n}-${side}-${esc(e.letra)}" ${defaultOpen ? "open" : ""} class="group/t rounded-2xl border ${border} bg-surface px-4 py-3 shadow-sm">
-      <summary class="flex cursor-pointer list-none items-center justify-between [&::-webkit-details-marker]:hidden">${head}</summary>
-      <ul class="mt-2 space-y-1.5 border-t ${border} pt-2 text-sm text-secondary">${members}</ul>
+    <details data-key="ronda-${n}-${side}-${e.letra}" class="${tone}">
+      <summary class="round-team-card__summary">${header}</summary>
+      <div class="round-team-card__body">
+        <div class="round-team-card__divider"></div>
+        <ul class="round-team-card__members">${members}</ul>
+      </div>
     </details>`;
 }
 
-function regionalBox(side: "rojo" | "azul", val: number): string {
+function regionalBox(side: "rojo" | "azul", val: number, round: number): string {
   const red = side === "rojo";
   return `
-    <div class="rounded-2xl border ${red ? "border-red-100 bg-red-50" : "border-blue-100 bg-blue-50"} px-5 py-4 text-center">
-      <p class="text-[10px] font-bold uppercase tracking-wide ${red ? "text-red-500" : "text-blue-500"}">Alianza Regional ${red ? "Rojo" : "Azul"}</p>
-      <p class="font-heading text-4xl leading-none ${red ? "text-red-600" : "text-blue-600"}">${fmt(val)}</p>
+    <div class="round-regional ${red ? "round-regional--red" : "round-regional--blue"}">
+      <p class="round-regional__label">Alianza Regional ${red ? "Rojo" : "Azul"}</p>
+      <p class="round-regional__value">${renderMetric(`ronda-${round}-${side}-regional`, val, "", "")}</p>
     </div>`;
 }
 
-function buddyPill(side: "rojo" | "azul", val: number): string {
-  if (!val) return "";
-  const red = side === "rojo";
+function buddyPill(side: "rojo" | "azul", val: number, round: number): string {
   return `
-    <div class="${red ? "text-left" : "text-right"}">
-      <span class="inline-block rounded-full ${red ? "bg-red-500" : "bg-blue-500"} px-4 py-1.5 text-xs font-semibold text-white">+${fmt(val)} Buddy climb</span>
+    <div class="round-buddy-wrap ${side === "rojo" ? "round-buddy-wrap--left" : "round-buddy-wrap--right"}">
+      <span class="round-buddy ${side === "rojo" ? "round-buddy--red" : "round-buddy--blue"}">${renderMetric(`ronda-${round}-${side}-buddy`, val, "", "+", " Buddy climb")}</span>
     </div>`;
 }
 
-function centerChip(label: string, val: string): string {
+function centerChip(label: string, metricKey: string, val: number, prefix = ""): string {
   return `
-    <div class="rounded-2xl border border-default bg-surface px-3 py-3 text-center shadow-sm">
-      <p class="text-[10px] font-bold uppercase tracking-wide text-tertiary">${label}</p>
-      <p class="mt-0.5 font-heading text-3xl leading-none">${val}</p>
+    <div class="round-chip">
+      <p class="round-chip__label">${esc(label)}</p>
+      <p class="round-chip__value">${renderMetric(metricKey, val, "", prefix)}</p>
     </div>`;
 }
 
-const emptyAlliance = (side: "rojo" | "azul") =>
-  `<div class="rounded-2xl border ${side === "rojo" ? "border-red-100" : "border-blue-100"} bg-surface px-4 py-6 text-center text-sm italic text-tertiary shadow-sm">Alianza por definir</div>`;
+function emptyAlliance(side: "rojo" | "azul"): string {
+  return `
+    <div class="round-alliance-empty ${side === "rojo" ? "round-alliance-empty--red" : "round-alliance-empty--blue"}">
+      Alianza por definir
+    </div>`;
+}
+
+function roundScorePreview(r: Ronda): string {
+  if (!r.hasData) {
+    return `<span class="round-accordion__score-preview round-accordion__score-preview--muted">Sin datos</span>`;
+  }
+
+  return `
+    <span class="round-accordion__score-preview">
+      <span class="round-score-preview__red">${fmt(r.rojo.score, 0)}</span>
+      <span class="round-score-preview__vs">vs</span>
+      <span class="round-score-preview__blue">${fmt(r.azul.score, 0)}</span>
+    </span>`;
+}
+
+function roundHeader(r: Ronda): string {
+  return `
+    <div class="round-stage__header">
+      <p class="round-stage__subtitle">RONDA ${r.n}${r.descansa ? ` · DESCANSA ${esc(r.descansa).toUpperCase()}` : ""}</p>
+    </div>`;
+}
 
 function roundBody(r: Ronda): string {
-  if (!r.hasData)
-    return `<div class="border-t border-default px-6 py-8 text-center text-sm italic text-tertiary">Esta ronda aún no tiene datos cargados.</div>`;
+  if (!r.hasData) {
+    return `
+      <div class="round-stage">
+        <div class="round-stage__panel">
+          ${LOW_POLY_BACKDROP}
+          <div class="round-stage__surface">
+            ${roundHeader(r)}
+            <div class="round-stage__empty">Esta ronda aún no tiene datos cargados.</div>
+          </div>
+        </div>
+      </div>`;
+  }
 
   return `
-    <div class="border-t border-default bg-gradient-to-r from-red-50 via-surface to-blue-50 px-3 py-6 sm:px-6 lg:px-8">
-      <div class="mb-6 text-center">
-        <h3 class="font-heading text-3xl leading-none sm:text-4xl">Igniting Innovation</h3>
-        <p class="mt-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-secondary">
-          Ronda ${r.n}${r.descansa ? ` · Descansa ${esc(r.descansa)}` : ""}
-        </p>
-      </div>
+    <div class="round-stage">
+      <div class="round-stage__panel">
+        ${LOW_POLY_BACKDROP}
+        <div class="round-stage__surface">
+          ${roundHeader(r)}
 
-      <div class="grid items-start gap-4 lg:grid-cols-[1fr_16rem_1fr]">
-        <!-- ALIANZA ROJA -->
-        <div class="space-y-3">
-          ${r.rojo.equipos.length ? r.rojo.equipos.map((e, i) => teamCard(r.n, "rojo", e, i < 2)).join("") : emptyAlliance("rojo")}
-          ${regionalBox("rojo", r.rojo.totalRegional)}
-          ${buddyPill("rojo", r.rojo.buddy)}
-        </div>
+          <div class="round-stage__grid">
+            <div class="round-stage__column round-stage__column--red">
+              ${r.rojo.equipos.length ? r.rojo.equipos.map((e) => teamCard(r.n, "rojo", e)).join("") : emptyAlliance("rojo")}
+              ${regionalBox("rojo", r.rojo.totalRegional, r.n)}
+              ${buddyPill("rojo", r.rojo.buddy, r.n)}
+            </div>
 
-        <!-- CENTRO -->
-        <div class="flex flex-col items-center gap-4">
-          <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-secondary">Score total</p>
-          <div class="w-full rounded-2xl border border-default bg-surface px-4 py-5 text-center shadow-sm">
-            <div class="flex items-center justify-center gap-3 font-heading text-5xl leading-none sm:text-6xl">
-              <span class="text-red-500">${fmt(r.rojo.score)}</span>
-              <span class="text-lg italic text-tertiary">vs</span>
-              <span class="text-blue-500">${fmt(r.azul.score)}</span>
+            <div class="round-stage__center">
+              <p class="round-score-card__label">SCORE TOTAL</p>
+              <div class="round-score-card">
+                <div class="round-score-card__inner">
+                  <span class="round-score-card__value round-score-card__value--red">
+                    ${renderMetric(`ronda-${r.n}-rojo-score`, r.rojo.score)}
+                  </span>
+                  <span class="round-score-card__middle">
+                    <span class="round-score-card__line"></span>
+                    <span class="round-score-card__vs">VS</span>
+                    <span class="round-score-card__line round-score-card__line--bottom"></span>
+                  </span>
+                  <span class="round-score-card__value round-score-card__value--blue">
+                    ${renderMetric(`ronda-${r.n}-azul-score`, r.azul.score)}
+                  </span>
+                </div>
+              </div>
+
+              <div class="round-chip-grid">
+                ${centerChip("EXTINTOR GLOBAL", `ronda-${r.n}-extintor`, r.wildfireExt)}
+                ${centerChip("COOPERTITION", `ronda-${r.n}-coop`, r.coopBonus, "+")}
+              </div>
+            </div>
+
+            <div class="round-stage__column round-stage__column--blue">
+              ${r.azul.equipos.length ? r.azul.equipos.map((e) => teamCard(r.n, "azul", e)).join("") : emptyAlliance("azul")}
+              ${regionalBox("azul", r.azul.totalRegional, r.n)}
+              ${buddyPill("azul", r.azul.buddy, r.n)}
             </div>
           </div>
-          <div class="grid w-full grid-cols-2 gap-3">
-            ${centerChip("Extintor global", fmt(r.wildfireExt))}
-            ${centerChip("Coopertition", "+" + fmt(r.coopBonus))}
-          </div>
-        </div>
-
-        <!-- ALIANZA AZUL -->
-        <div class="space-y-3 text-right">
-          ${r.azul.equipos.length ? r.azul.equipos.map((e, i) => teamCard(r.n, "azul", e, i < 2)).join("") : emptyAlliance("azul")}
-          ${regionalBox("azul", r.azul.totalRegional)}
-          ${buddyPill("azul", r.azul.buddy)}
         </div>
       </div>
     </div>`;
 }
 
 function roundCard(r: Ronda): string {
-  const score = r.hasData
-    ? `<span class="text-red-500">${fmt(r.rojo.score)}</span> <span class="text-sm text-tertiary">vs</span> <span class="text-blue-500">${fmt(r.azul.score)}</span>`
-    : `<span class="text-base text-tertiary">Sin datos</span>`;
   const openByDefault = r.hasData && r.estado === "En curso";
 
   return `
-    <details data-key="ronda-${r.n}" ${openByDefault ? "open" : ""} class="group overflow-hidden rounded-2xl border border-default bg-surface ${r.hasData ? "" : "opacity-70"}">
-      <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-4 [&::-webkit-details-marker]:hidden sm:px-5">
-        <div class="flex items-center gap-3">
-          <span class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-subtle font-heading text-lg text-secondary">${r.n}</span>
+    <details data-key="ronda-${r.n}" ${openByDefault ? "open" : ""} class="round-accordion ${r.hasData ? "" : "round-accordion--muted"}">
+      <summary class="round-accordion__summary">
+        <div class="round-accordion__summary-left">
+          <span class="round-accordion__number">${r.n}</span>
           <div>
-            <p class="font-bold">Ronda ${r.n}</p>
-            <p class="mt-0.5 flex items-center gap-2 text-xs text-tertiary">
-              ${estadoBadge(r.estado)}${r.descansa ? `<span>· Descansa ${esc(r.descansa)}</span>` : ""}
+            <p class="round-accordion__title">Ronda ${r.n}</p>
+            <p class="round-accordion__meta">
+              ${estadoBadge(r.estado)}
+              ${r.descansa ? `<span class="round-accordion__rest">· Descansa ${esc(r.descansa)}</span>` : ""}
             </p>
           </div>
         </div>
-        <div class="flex items-center gap-3">
-          <span class="font-heading text-2xl tabular-nums">${score}</span>
-          ${chevron}
+
+        <div class="round-accordion__summary-right">
+          ${roundScorePreview(r)}
+          <span class="round-accordion__caret">${caretIcon("round-accordion__caret-icon")}</span>
         </div>
       </summary>
       ${roundBody(r)}
     </details>`;
 }
 
-// ==========================================================================
-//  TABLA MECÁNICA
-// ==========================================================================
 function mecTable(tabla: MecTeam[]): string {
   const rows = tabla
     .map(
@@ -168,6 +306,7 @@ function mecTable(tabla: MecTeam[]): string {
       </tr>`
     )
     .join("");
+
   return `
     <div class="overflow-x-auto">
       <table class="w-full min-w-[560px] border-collapse text-sm">
@@ -185,18 +324,107 @@ function mecTable(tabla: MecTeam[]): string {
     </div>`;
 }
 
-// ==========================================================================
-//  Sub-tabs + render principal
-// ==========================================================================
 function subTab(id: "rondas" | "tabla", label: string): string {
   const on = activeSub === id;
   return `<button data-sub="${id}" class="rounded-full px-5 py-2 text-sm font-bold uppercase tracking-wide transition-colors ${on ? "bg-brand text-inverse" : "text-secondary hover:text-primary"}">${label}</button>`;
 }
 
+function prefersReducedMotion(): boolean {
+  return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+function cancelMetricAnimations() {
+  activeMetricFrames.forEach((id) => window.cancelAnimationFrame(id));
+  activeMetricFrames.clear();
+}
+
+function setMetricText(node: HTMLElement, value: number) {
+  const prefix = node.dataset.prefix ?? "";
+  const suffix = node.dataset.suffix ?? "";
+  node.textContent = `${prefix}${fmt(value, 0)}${suffix}`;
+}
+
+function animateMetric(node: HTMLElement, from: number, to: number, duration = 1300) {
+  const prefix = node.dataset.prefix ?? "";
+  const suffix = node.dataset.suffix ?? "";
+  const start = performance.now();
+
+  const tick = (now: number) => {
+    const progress = Math.min(1, (now - start) / duration);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const next = Math.round(from + (to - from) * eased);
+    node.textContent = `${prefix}${fmt(next, 0)}${suffix}`;
+
+    if (progress < 1) {
+      const nextId = window.requestAnimationFrame((frameNow) => {
+        activeMetricFrames.delete(nextId);
+        tick(frameNow);
+      });
+      activeMetricFrames.add(nextId);
+    } else {
+      setMetricText(node, to);
+    }
+  };
+
+  const id = window.requestAnimationFrame((now) => {
+    activeMetricFrames.delete(id);
+    tick(now);
+  });
+  activeMetricFrames.add(id);
+}
+
+function hydrateRoundMetrics(root: HTMLElement) {
+  const reduced = prefersReducedMotion();
+  const rounds = Array.from(root.querySelectorAll<HTMLDetailsElement>(".round-accordion[open]"));
+  const freshRounds = new Set(
+    rounds
+      .filter((round) => {
+        const key = round.dataset.key;
+        return Boolean(key && !round.dataset.restoredOpen && !seenOpenRounds.has(key));
+      })
+      .map((round) => round.dataset.key!)
+  );
+
+  rounds.forEach((round) => {
+    const roundKey = round.dataset.key;
+    if (!roundKey) return;
+
+    round.querySelectorAll<HTMLElement>(".js-round-metric").forEach((node) => {
+      const metricKey = node.dataset.metric;
+      if (!metricKey) return;
+
+      const value = Number(node.dataset.value ?? "0");
+      const prev = metricSnapshot.get(metricKey);
+      const shouldAnimate = !reduced && (freshRounds.has(roundKey) || prev === undefined || prev !== value);
+
+      if (shouldAnimate) {
+        animateMetric(node, prev ?? 0, value);
+      } else {
+        setMetricText(node, value);
+      }
+
+      metricSnapshot.set(metricKey, value);
+    });
+
+    seenOpenRounds.add(roundKey);
+  });
+}
+
+function viewSignature(data: Payload): string {
+  return activeSub === "rondas"
+    ? JSON.stringify(data.ingenieria.rondas)
+    : JSON.stringify(data.ingenieria.tabla);
+}
+
 function paint(el: HTMLElement, data: Payload) {
+  const signature = `${activeSub}:${viewSignature(data)}`;
+  if (el.dataset.viewSignature === signature) return;
+
+  cancelMetricAnimations();
+
   const content =
     activeSub === "rondas"
-      ? `<div class="space-y-3">${data.ingenieria.rondas.map(roundCard).join("")}</div>`
+      ? `<div class="space-y-4">${data.ingenieria.rondas.map(roundCard).join("")}</div>`
       : mecTable(data.ingenieria.tabla);
 
   paintKeepingOpen(
@@ -213,18 +441,40 @@ function paint(el: HTMLElement, data: Payload) {
     </div>
     ${content}`
   );
+
+  el.dataset.viewSignature = signature;
+
+  if (activeSub === "rondas") {
+    hydrateRoundMetrics(el);
+  }
 }
 
 export function renderIngenieria(el: HTMLElement, data: Payload) {
   latest = data;
+
   if (!el.dataset.bound) {
     el.dataset.bound = "1";
     el.addEventListener("click", (e) => {
-      const btn = (e.target as HTMLElement).closest("[data-sub]") as HTMLElement | null;
-      if (!btn) return;
-      activeSub = btn.dataset.sub as "rondas" | "tabla";
-      if (latest) paint(el, latest);
+      const target = e.target as HTMLElement;
+      const btn = target.closest("[data-sub]") as HTMLElement | null;
+
+      if (btn) {
+        activeSub = btn.dataset.sub as "rondas" | "tabla";
+        if (latest) paint(el, latest);
+        return;
+      }
+
+      const summary = target.closest("summary");
+      const round = summary?.closest(".round-accordion") as HTMLDetailsElement | null;
+      if (!round) return;
+
+      if (round.dataset.restoredOpen === "1") {
+        delete round.dataset.restoredOpen;
+      }
+
+      window.requestAnimationFrame(() => hydrateRoundMetrics(el));
     });
   }
+
   paint(el, data);
 }

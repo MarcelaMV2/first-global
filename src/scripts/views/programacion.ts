@@ -19,7 +19,6 @@ function row(r: ProgRow): string {
         <span class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-subtle font-heading text-lg text-secondary">${r.rank}</span>
         <div class="min-w-0 flex-1">
           <p class="truncate font-bold">${esc(r.nombre)}</p>
-          <p class="text-xs font-medium uppercase tracking-wide text-tertiary">Grupo ${esc(r.grupo || "—")}</p>
         </div>
         <div class="text-right">
           <p class="text-xs font-semibold uppercase tracking-wide text-tertiary">Total</p>
