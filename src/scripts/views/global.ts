@@ -145,13 +145,6 @@ function podiumSlot(row: GlobalRow | undefined, place: number, tier: MedalTier, 
     </article>`;
 }
 
-function badgeTone(rank: number): string {
-  if (rank === 1) return " gr-rank-card__badge--gold";
-  if (rank === 2) return " gr-rank-card__badge--silver";
-  if (rank === 3) return " gr-rank-card__badge--bronze";
-  return "";
-}
-
 function metric(label: string, value: number): string {
   return `
     <div class="gr-rank-card__metric">
@@ -165,7 +158,7 @@ function rankCard(row: GlobalRow, index: number): string {
     <article class="gr-rank-card border border-default bg-surface" style="--gr-row-delay:${Math.min(index, 11) * 0.045}s">
       <div class="gr-rank-card__main">
         <div class="gr-rank-card__identity">
-          <span class="gr-rank-card__badge bg-subtle text-secondary${badgeTone(row.rank)}">${row.rank}</span>
+          <span class="gr-rank-card__badge bg-subtle text-secondary">${row.rank}</span>
           <div class="gr-rank-card__person">
             <p class="gr-rank-card__name text-primary">${esc(row.nombre)}</p>
           </div>

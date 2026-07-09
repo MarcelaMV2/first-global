@@ -7,6 +7,7 @@ function video(label: string, value: number): string {
     <div class="com-video-card">
       <p class="com-video-card__label">${label}</p>
       <p class="com-video-card__value">${fmt(value)}</p>
+      <p class="com-video-card__max">/10</p>
     </div>`;
 }
 

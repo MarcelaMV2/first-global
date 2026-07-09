@@ -14,8 +14,8 @@ function measure(label: string, value: number, max: string): string {
 function row(r: ProgRow): string {
   const pct = Math.round((r.total / 30) * 100);
   return `
-    <details data-key="prog-${esc(r.nombre)}" class="group overflow-hidden rounded-2xl border border-default bg-surface">
-      <summary class="flex cursor-pointer list-none items-center gap-3 px-4 py-3 [&::-webkit-details-marker]:hidden sm:gap-5">
+    <details data-key="prog-${esc(r.nombre)}" class="prog-row group overflow-hidden rounded-2xl border border-default bg-surface">
+      <summary class="prog-row__summary flex cursor-pointer list-none items-center gap-3 px-4 py-3 [&::-webkit-details-marker]:hidden sm:gap-5">
         <span class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-subtle font-heading text-lg text-secondary">${r.rank}</span>
         <div class="min-w-0 flex-1">
           <p class="truncate font-bold">${esc(r.nombre)}</p>
@@ -27,12 +27,12 @@ function row(r: ProgRow): string {
         </div>
         ${chevron}
       </summary>
-      <div class="grid grid-cols-2 gap-3 border-t border-default px-4 py-4 sm:grid-cols-5">
+      <div class="grid grid-cols-2 gap-3 border-t border-default px-4 py-4 sm:grid-cols-4 min-[960px]:grid-cols-5">
         ${measure("Cumplim.", r.cumpl, "/15")}
         ${measure("Modular.", r.modular, "/5")}
         ${measure("Escala.", r.escala, "/5")}
         ${measure("Efic.", r.efic, "/5")}
-        <div class="col-span-2 rounded-xl bg-subtle px-4 py-3 sm:col-span-1">
+        <div class="col-span-2 rounded-xl bg-subtle px-4 py-3 sm:col-span-4 min-[960px]:col-span-1">
           <div class="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-tertiary">
             <span>Rendimiento</span><span class="text-primary">${pct}%</span>
           </div>
