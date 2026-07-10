@@ -11,18 +11,6 @@ const seenOpenRounds = new Set<string>();
 const metricSnapshot = new Map<string, number>();
 const activeMetricFrames = new Set<number>();
 
-function estadoBadge(estado: string): string {
-  const label = estado || "Pendiente";
-  const tone =
-    estado === "Finalizada"
-      ? "round-badge round-badge--dark"
-      : estado === "En curso"
-        ? "round-badge round-badge--green"
-        : "round-badge round-badge--muted";
-
-  return `<span class="${tone}">${esc(label)}</span>`;
-}
-
 function caretIcon(className: string): string {
   return `
     <svg class="${className}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -122,35 +110,25 @@ function renderMetric(key: string, value: number, extraClass = "", prefix = "", 
   return `<span class="js-round-metric ${extraClass}" data-metric="${key}" data-value="${value}" data-prefix="${esc(prefix)}" data-suffix="${esc(suffix)}">${prefix}${fmt(value, 0)}${suffix}</span>`;
 }
 
-function teamCard(n: number, side: "rojo" | "azul", e: AlianzaEquipo): string {
-  const red = side === "rojo";
-  const tone = red ? "round-team-card round-team-card--red" : "round-team-card round-team-card--blue";
-  const accent = red
-    ? `<span class="round-team-card__meta">${caretIcon("round-team-card__caret")}<span class="round-team-card__dot"></span></span>`
-    : `<span class="round-team-card__meta"><span class="round-team-card__dot"></span>${caretIcon("round-team-card__caret")}</span>`;
+function compactTeamItem(side: "rojo" | "azul", equipo: AlianzaEquipo): string {
+  const dot = `<span class="round-accordion__team-dot" aria-hidden="true"></span>`;
+  const label = `<span class="round-accordion__team-label">Equipo ${esc(equipo.letra)}</span>`;
+  return side === "rojo"
+    ? `<div class="round-accordion__team-item round-accordion__team-item--red">${dot}${label}</div>`
+    : `<div class="round-accordion__team-item round-accordion__team-item--blue">${label}${dot}</div>`;
+}
 
-  const members = e.integrantes.length
-    ? e.integrantes
-        .map((m) =>
-          red
-            ? `<li class="round-team-card__member"><span class="round-team-card__member-dot"></span><span>${esc(m)}</span></li>`
-            : `<li class="round-team-card__member round-team-card__member--blue"><span>${esc(m)}</span><span class="round-team-card__member-dot"></span></li>`
-        )
-        .join("")
-    : `<li class="round-team-card__empty">Integrantes por asignar</li>`;
-
-  const header = red
-    ? `<span class="round-team-card__name">Equipo ${esc(e.letra)}</span>${accent}`
-    : `${accent}<span class="round-team-card__name">Equipo ${esc(e.letra)}</span>`;
+function compactTeamList(side: "rojo" | "azul", equipos: AlianzaEquipo[]): string {
+  const items = equipos.length
+    ? equipos.map((equipo) => compactTeamItem(side, equipo)).join("")
+    : `<div class="round-accordion__team-item round-accordion__team-item--empty">
+        <span class="round-accordion__team-label">Sin equipos</span>
+      </div>`;
 
   return `
-    <details data-key="ronda-${n}-${side}-${e.letra}" class="${tone}">
-      <summary class="round-team-card__summary">${header}</summary>
-      <div class="round-team-card__body">
-        <div class="round-team-card__divider"></div>
-        <ul class="round-team-card__members">${members}</ul>
-      </div>
-    </details>`;
+    <div class="round-accordion__summary-side round-accordion__summary-side--${side}">
+      ${items}
+    </div>`;
 }
 
 function regionalBox(side: "rojo" | "azul", val: number, round: number): string {
@@ -192,13 +170,6 @@ function centerChip(label: string, metricKey: string, val: number, prefix = ""):
     </div>`;
 }
 
-function emptyAlliance(side: "rojo" | "azul"): string {
-  return `
-    <div class="round-alliance-empty ${side === "rojo" ? "round-alliance-empty--red" : "round-alliance-empty--blue"}">
-      Alianza por definir
-    </div>`;
-}
-
 function roundScorePreview(r: Ronda): string {
   if (!r.hasData) {
     return `<span class="round-accordion__score-preview round-accordion__score-preview--muted">Sin datos</span>`;
@@ -212,13 +183,6 @@ function roundScorePreview(r: Ronda): string {
     </span>`;
 }
 
-function roundHeader(r: Ronda): string {
-  return `
-    <div class="round-stage__header">
-      <p class="round-stage__subtitle">RONDA ${r.n}${r.descansa ? ` · DESCANSA ${esc(r.descansa).toUpperCase()}` : ""}</p>
-    </div>`;
-}
-
 function roundBody(r: Ronda): string {
   if (!r.hasData) {
     return `
@@ -226,7 +190,6 @@ function roundBody(r: Ronda): string {
         <div class="round-stage__panel">
           ${LOW_POLY_BACKDROP}
           <div class="round-stage__surface">
-            ${roundHeader(r)}
             <div class="round-stage__empty">Esta ronda aún no tiene datos cargados.</div>
           </div>
         </div>
@@ -238,34 +201,14 @@ function roundBody(r: Ronda): string {
       <div class="round-stage__panel">
         ${LOW_POLY_BACKDROP}
         <div class="round-stage__surface">
-          ${roundHeader(r)}
-
           <div class="round-stage__grid">
             <div class="round-stage__column round-stage__column--red">
-              ${r.rojo.equipos.length ? r.rojo.equipos.map((e) => teamCard(r.n, "rojo", e)).join("") : emptyAlliance("rojo")}
               ${regionalBox("rojo", r.rojo.totalRegional, r.n)}
               ${buddyPill("rojo", r.rojo.buddy, r.n)}
               ${penaltyPill("rojo", r.rojo.penal, r.rojo.penalObs)}
             </div>
 
             <div class="round-stage__center">
-              <p class="round-score-card__label">SCORE TOTAL</p>
-              <div class="round-score-card">
-                <div class="round-score-card__inner">
-                  <span class="round-score-card__value round-score-card__value--red">
-                    ${renderMetric(`ronda-${r.n}-rojo-score`, r.rojo.score)}
-                  </span>
-                  <span class="round-score-card__middle">
-                    <span class="round-score-card__line"></span>
-                    <span class="round-score-card__vs">VS</span>
-                    <span class="round-score-card__line round-score-card__line--bottom"></span>
-                  </span>
-                  <span class="round-score-card__value round-score-card__value--blue">
-                    ${renderMetric(`ronda-${r.n}-azul-score`, r.azul.score)}
-                  </span>
-                </div>
-              </div>
-
               <div class="round-chip-grid">
                 ${centerChip("EXTINTOR GLOBAL", `ronda-${r.n}-extintor`, r.wildfireExt)}
                 ${centerChip("COOPERTITION", `ronda-${r.n}-coop`, r.coopBonus, "+")}
@@ -273,7 +216,6 @@ function roundBody(r: Ronda): string {
             </div>
 
             <div class="round-stage__column round-stage__column--blue">
-              ${r.azul.equipos.length ? r.azul.equipos.map((e) => teamCard(r.n, "azul", e)).join("") : emptyAlliance("azul")}
               ${regionalBox("azul", r.azul.totalRegional, r.n)}
               ${buddyPill("azul", r.azul.buddy, r.n)}
               ${penaltyPill("azul", r.azul.penal, r.azul.penalObs)}
@@ -290,21 +232,15 @@ function roundCard(r: Ronda): string {
   return `
     <details data-key="ronda-${r.n}" ${openByDefault ? "open" : ""} class="round-accordion ${r.hasData ? "" : "round-accordion--muted"}">
       <summary class="round-accordion__summary">
-        <div class="round-accordion__summary-left">
-          <span class="round-accordion__number">${r.n}</span>
-          <div>
-            <p class="round-accordion__title">Ronda ${r.n}</p>
-            <p class="round-accordion__meta">
-              ${estadoBadge(r.estado)}
-              ${r.descansa ? `<span class="round-accordion__rest">· Descansa ${esc(r.descansa)}</span>` : ""}
-            </p>
-          </div>
-        </div>
+        ${compactTeamList("rojo", r.rojo.equipos)}
 
-        <div class="round-accordion__summary-right">
+        <div class="round-accordion__summary-center">
+          <p class="round-accordion__title">Ronda ${r.n}</p>
           ${roundScorePreview(r)}
           <span class="round-accordion__caret">${caretIcon("round-accordion__caret-icon")}</span>
         </div>
+
+        ${compactTeamList("azul", r.azul.equipos)}
       </summary>
       ${roundBody(r)}
     </details>`;
