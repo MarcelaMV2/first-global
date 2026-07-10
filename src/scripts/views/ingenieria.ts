@@ -6,7 +6,7 @@ let activeSub: "rondas" | "tabla" = "rondas";
 let latest: Payload | null = null;
 
 const LOW_POLY_BACKDROP = buildStageBackdrop();
-/*hi */
+
 const seenOpenRounds = new Set<string>();
 const metricSnapshot = new Map<string, number>();
 const activeMetricFrames = new Set<number>();
