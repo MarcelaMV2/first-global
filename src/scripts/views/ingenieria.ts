@@ -110,6 +110,18 @@ function renderMetric(key: string, value: number, extraClass = "", prefix = "", 
   return `<span class="js-round-metric ${extraClass}" data-metric="${key}" data-value="${value}" data-prefix="${esc(prefix)}" data-suffix="${esc(suffix)}">${prefix}${fmt(value, 0)}${suffix}</span>`;
 }
 
+function estadoChip(estado: string): string {
+  const label = estado === "Finalizada" ? "Finalizado" : estado || "Pendiente";
+  const tone =
+    label === "Finalizado"
+      ? "round-status-chip round-status-chip--finalizado"
+      : label === "En curso"
+        ? "round-status-chip round-status-chip--curso"
+        : "round-status-chip round-status-chip--pendiente";
+
+  return `<span class="${tone}">${esc(label)}</span>`;
+}
+
 function compactTeamItem(side: "rojo" | "azul", equipo: AlianzaEquipo): string {
   const dot = `<span class="round-accordion__team-dot" aria-hidden="true"></span>`;
   const label = `<span class="round-accordion__team-label">Equipo ${esc(equipo.letra)}</span>`;
@@ -235,9 +247,10 @@ function roundCard(r: Ronda): string {
         ${compactTeamList("rojo", r.rojo.equipos)}
 
         <div class="round-accordion__summary-center">
+          ${estadoChip(r.estado)}
           <p class="round-accordion__title">Ronda ${r.n}</p>
-          ${roundScorePreview(r)}
           <span class="round-accordion__caret">${caretIcon("round-accordion__caret-icon")}</span>
+          ${roundScorePreview(r)}
         </div>
 
         ${compactTeamList("azul", r.azul.equipos)}
